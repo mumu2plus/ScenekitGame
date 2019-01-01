@@ -8,11 +8,17 @@
 
 import SceneKit
 
-class GameSCNScene: SCNScene {
+enum PhysicsCategory: Int {
+    case hero = 1
+    case ground = 2
+    case enemy = 4
+}
+
+class GameSCNScene: SCNScene, SCNPhysicsContactDelegate {
     
     var scnView: SCNView!
     var _size: CGSize!
-    
+    var hero: Hero!
     
     init(currentview view: SCNView) {
         super.init()
@@ -25,10 +31,37 @@ class GameSCNScene: SCNScene {
         scnView.showsStatistics = true
         scnView.backgroundColor = UIColor.blue
         
-        self.addGeometryNode()
+        //self.addGeometryNode()
+        
+        //addFloorNode()
+        
+        self.physicsWorld.gravity = SCNVector3Make(0, -500, 0)
+        self.physicsWorld.contactDelegate = self
+        scnView.debugOptions = SCNDebugOptions.showPhysicsShapes
+        
+        self.hero = Hero(currentScene: self)
+        hero.position = SCNVector3Make(0, 5, 0)
+        
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.position = SCNVector3(-30, 5, 12)
+        cameraNode.eulerAngles.y -= Float(Double.pi/2)
+        self.rootNode.addChildNode(cameraNode)
+        
         self.addLightSourceNode()
-        addCameraNode()
-        addFloorNode()
+        
+        let groundBox = SCNBox(width: 10, height: 2, length: 10, chamferRadius: 0)
+        let groundNode = SCNNode(geometry: groundBox)
+        
+        groundNode.position = SCNVector3Make(0, -1.01, 0)
+        groundNode.physicsBody = SCNPhysicsBody.static()
+        groundNode.physicsBody?.restitution = 0.0
+        groundNode.physicsBody?.friction = 1.0
+        groundNode.physicsBody?.categoryBitMask = PhysicsCategory.ground.rawValue
+        groundNode.physicsBody?.contactTestBitMask = PhysicsCategory.hero.rawValue
+        
+        groundNode.name = "ground"
+        self.rootNode.addChildNode(groundNode)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -58,13 +91,6 @@ class GameSCNScene: SCNScene {
         ambientLightNode.light!.color = UIColor.darkGray
         self.rootNode.addChildNode(ambientLightNode)
     }
-    
-    func addCameraNode() {
-        let cameraNode = SCNNode()
-        cameraNode.camera = SCNCamera()
-        cameraNode.position = SCNVector3(0, 40, 100)
-        self.rootNode.addChildNode(cameraNode)
-    }
 
     func addFloorNode() {
         let floorNode = SCNNode()
@@ -72,9 +98,6 @@ class GameSCNScene: SCNScene {
         floorNode.position.y = -1.0
         self.rootNode.addChildNode(floorNode)
         
-        // load the monster from the collada scene
-        let monsterScene: SCNScene = SCNScene(named: "art.scnassets/theDude.DAE")!
-        let monsterNode = monsterScene.rootNode.childNode(withName: "CATRigHub001", recursively: false)!
-        self.rootNode.addChildNode(monsterNode)
+        
     }
 }
