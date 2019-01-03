@@ -24,6 +24,26 @@ class Hero: SCNNode {
         fatalError("init(coder:) has not been implemented")
     }
     
+    static func time(atFrame frame: Int, fps: Double = 30) -> TimeInterval {
+        return TimeInterval(frame) / fps
+    }
+    
+    static func timeRange(forStartingAtFrame start:Int, endingAtFrame end:Int, fps:Double = 30) -> (offset:TimeInterval, duration:TimeInterval) {
+        let startTime = self.time(atFrame: start, fps: fps)
+        let endTime = self.time(atFrame: end, fps: fps)
+        return (offset:startTime, duration:endTime - startTime)
+    }
+    
+    static func animation(from full: CAAnimation, startingAtFrame start: Int, endingAtFrame end: Int, fps: Double = 30) -> CAAnimation {
+        let range = self.timeRange(forStartingAtFrame: start, endingAtFrame: end, fps: fps)
+        let animation = CAAnimationGroup()
+        let sub = full.copy() as! CAAnimation
+        sub.timeOffset = range.offset
+        animation.animations = [sub]
+        animation.duration = range.duration
+        return animation
+    }
+    
     func create(currentScene: GameSCNScene) {
         // load the monster from the collada scene
         let monsterScene: SCNScene = SCNScene(named: "monster.scnassets/theDude.DAE")!
@@ -34,6 +54,37 @@ class Hero: SCNNode {
         let (minVec, maxVec) = self.boundingBox
         let bound = SCNVector3(x: maxVec.x - minVec.x, y: maxVec.y - minVec.y, z: maxVec.z - minVec.z)
         monsterNode.pivot = SCNMatrix4MakeTranslation(bound.x * 1.1, 0, 0)
+        
+        // get the animation keys and store it in the anims
+        let animKeys = monsterNode.animationKeys.first
+        let animPlayer = monsterNode.animationPlayer(forKey: animKeys!)
+        let anims = CAAnimation(scnAnimation: (animPlayer?.animation)!)
+        
+        // get the run animation from the animations
+        let runAnimation = Hero.animation(from: anims, startingAtFrame: 31, endingAtFrame: 50)
+        runAnimation.repeatCount = .greatestFiniteMagnitude
+        runAnimation.fadeInDuration = 0.3
+        runAnimation.fadeOutDuration = 0.3
+        
+        // set the run animation to the player
+        runPlayer = SCNAnimationPlayer(animation: SCNAnimation(caAnimation: runAnimation))
+        monsterNode.addAnimationPlayer(runPlayer, forKey: "run")
+        
+        // get the jump animation from the animations
+        let jumpAnimation = Hero.animation(from: anims, startingAtFrame: 81, endingAtFrame: 100)
+        jumpAnimation.repeatCount = .greatestFiniteMagnitude
+        jumpAnimation.fadeInDuration = 0.3
+        jumpAnimation.fadeOutDuration = 0.3
+        
+        // set the jump animation to the player
+        jumpPlayer = SCNAnimationPlayer(animation: SCNAnimation(caAnimation: jumpAnimation))
+        monsterNode.addAnimationPlayer(jumpPlayer, forKey: "jump")
+        
+        // remove all the animations from the character
+        monsterNode.removeAllAnimations()
+        
+        // play the run animation at start
+        monsterNode.animationPlayer(forKey: "run")?.play()
         
         // Set the collision box for the character
         let collisionBox = SCNBox(width: 2, height: 8, length: 2, chamferRadius: 0)
@@ -61,13 +112,27 @@ class Hero: SCNNode {
         }
     }
     
+    func playRunAnim() {
+        monsterNode.removeAllAnimations()
+        monsterNode.addAnimationPlayer(runPlayer, forKey: "run")
+        monsterNode.animationPlayer(forKey: "run")?.play()
+    }
+    
+    func playJumpAnim() {
+        monsterNode.removeAllAnimations()
+        monsterNode.addAnimationPlayer(jumpPlayer, forKey: "jump")
+        monsterNode.animationPlayer(forKey: "jump")?.play()
+    }
+    
     func update() {
         if(self.presentation.position.y < 4.0) {
             if(isGrounded == false) {
+                playRunAnim()
                 isGrounded = true
             }
         } else {
             if(isGrounded == true) {
+                playJumpAnim()
                 isGrounded = false
             }
         }
