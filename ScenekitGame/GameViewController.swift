@@ -10,13 +10,15 @@ import UIKit
 import QuartzCore
 import SceneKit
 
-class GameViewController: UIViewController {
+class GameViewController: UIViewController, SCNSceneRendererDelegate {
     
     var gameSCNScene: GameSCNScene!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         let scnView = view as! SCNView
+        scnView.delegate = self
+        
         gameSCNScene = GameSCNScene(currentview: scnView)
     }
     
@@ -41,5 +43,8 @@ class GameViewController: UIViewController {
         }
     }
 
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        gameSCNScene.update()
+    }
     
 }

@@ -26,8 +26,8 @@ class Hero: SCNNode {
     
     func create(currentScene: GameSCNScene) {
         // load the monster from the collada scene
-        let monsterScene: SCNScene = SCNScene(named: "art.scnassets/theDude.DAE")!
-        let monsterNode = monsterScene.rootNode.childNode(withName: "CATRigHub001", recursively: false)!
+        let monsterScene: SCNScene = SCNScene(named: "monster.scnassets/theDude.DAE")!
+        monsterNode = monsterScene.rootNode.childNode(withName: "CATRigHub001", recursively: false)!
         self.addChildNode(monsterNode)
         
         // set the anchor point to the center of the character
